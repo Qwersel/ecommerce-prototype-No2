@@ -11,7 +11,7 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/buyersell';
 
-// schemas
+// here are essential schemas
 const Product = mongoose.model('Product', new mongoose.Schema(
   {
     name:        { type: String, required: true, trim: true },
@@ -41,7 +41,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(join(__dirname, 'public')));
 
-// image upload
+// code for image upload. Later added size restriction so the webpage won't be overloaded.
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
@@ -56,7 +56,7 @@ app.get('/api/config', (req, res) => {
   res.json({ paypalClientId: process.env.PAYPAL_CLIENT_ID || null });
 });
 
-// products
+// how products are handled
 app.get('/api/products', async (req, res) => {
   try {
     const filter = req.query.search
@@ -117,7 +117,7 @@ app.get('/api/orders', async (req, res) => {
   } catch { res.status(500).json({ error: 'Failed to fetch orders' }); }
 });
 
-// paypal
+// fakepal
 const PAYPAL_BASE = 'https://api-m.sandbox.paypal.com';
 
 async function getAccessToken() {
@@ -180,14 +180,14 @@ app.post('/api/paypal/capture-order', async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message || 'Failed to capture order' }); }
 });
 
-// pages
+// all webpages so they can be accessed from one another later
 app.get('/', (req, res) => res.sendFile(join(__dirname, 'public', 'index.html')));
 app.get('/products', (req, res) => res.sendFile(join(__dirname, 'public', 'products.html')));
 app.get('/add-product', (req, res) => res.sendFile(join(__dirname, 'public', 'add-product.html')));
 app.get('/orders', (req, res) => res.sendFile(join(__dirname, 'public', 'orders.html')));
 app.get('/product/:id', (req, res) => res.sendFile(join(__dirname, 'public', 'product-detail.html')));
 
-// start
+// and finally start
 mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB');
