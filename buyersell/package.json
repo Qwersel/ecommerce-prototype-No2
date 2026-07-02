@@ -1,7 +1,7 @@
 {
   "name": "buyersell",
   "version": "1.0.0",
-  "description": "Buyersell e-commerce web application",
+  "description": "Buyersell e-commerce webpage for a my uni project",
   "main": "server.js",
   "type": "module",
   "scripts": {
