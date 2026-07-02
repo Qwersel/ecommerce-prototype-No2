@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Product - Buyersell</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">Buyersell</a>
+    <nav>
+      <a href="/products">Products</a>
+      <a href="/add-product">Add Product</a>
+      <a href="/orders">Orders</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Add Product</h1>
+
+    <div id="message"></div>
+
+    <form id="add-form" style="max-width:480px;">
+      <label for="name">Name</label>
+      <input type="text" id="name" required placeholder="e.g. Laptop" />
+
+      <label for="description">Description</label>
+      <textarea id="description" required placeholder="Brief description"></textarea>
+
+      <label for="price">Price (&pound;)</label>
+      <input type="number" id="price" required min="0" step="0.01" placeholder="0.00" />
+
+      <label for="stock">Stock Quantity</label>
+      <input type="number" id="stock" min="0" value="0" />
+
+      <label for="image">Product Image <span style="font-weight:normal;color:#666;">(optional, max 5 MB)</span></label>
+      <input type="file" id="image" accept="image/*" />
+      <img id="img-preview" class="img-preview" style="display:none;" alt="Preview" />
+
+      <button type="submit">Add Product</button>
+    </form>
+  </main>
+
+  <footer>By Mustafa Ersel Algan for App &amp; Web Development</footer>
+
+  <script>
+    document.getElementById('image').addEventListener('change', function () {
+      const file = this.files[0];
+      const preview = document.getElementById('img-preview');
+      if (!file) { preview.style.display = 'none'; return; }
+      if (file.size > 5 * 1024 * 1024) {
+        document.getElementById('message').innerHTML =
+          '<div class="message error">Image must be under 5 MB.</div>';
+        this.value = '';
+        preview.style.display = 'none';
+        return;
+      }
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    });
+
+    document.getElementById('add-form').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      const msg = document.getElementById('message');
+      msg.innerHTML = '';
+
+      const formData = new FormData();
+      formData.append('name',        document.getElementById('name').value.trim());
+      formData.append('description', document.getElementById('description').value.trim());
+      formData.append('price',       document.getElementById('price').value);
+      formData.append('stock',       document.getElementById('stock').value);
+      const imageFile = document.getElementById('image').files[0];
+      if (imageFile) formData.append('image', imageFile);
+
+      try {
+        const res  = await fetch('/api/products', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (res.ok) {
+          msg.innerHTML = '<div class="message success">Product added successfully.</div>';
+          this.reset();
+          document.getElementById('img-preview').style.display = 'none';
+        } else {
+          msg.innerHTML = `<div class="message error">${data.error || 'Failed to add product.'}</div>`;
+        }
+      } catch {
+        msg.innerHTML = '<div class="message error">An error occurred. Please try again.</div>';
+      }
+    });
+  </script>
+</body>
+</html>

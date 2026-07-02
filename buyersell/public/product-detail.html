@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product - Buyersell</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">Buyersell</a>
+    <nav>
+      <a href="/products">Products</a>
+      <a href="/add-product">Add Product</a>
+      <a href="/orders">Orders</a>
+    </nav>
+  </header>
+
+  <main>
+    <p><a href="/products">&larr; Back to Products</a></p>
+
+    <div id="product-container"></div>
+
+    <div id="payment-section" style="display:none;">
+      <h2>Purchase</h2>
+      <div id="payment-message"></div>
+      <div id="paypal-button-container"></div>
+    </div>
+  </main>
+
+  <footer>By Mustafa Ersel Algan for App &amp; Web Development</footer>
+
+  <script>
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
+
+    const productId = window.location.pathname.split('/').pop();
+
+    fetch(`/api/products/${productId}`)
+      .then(r => {
+        if (!r.ok) throw new Error('Not found');
+        return r.json();
+      })
+      .then(product => {
+        const container = document.getElementById('product-container');
+        const div = document.createElement('div');
+        div.className = 'product-detail';
+        div.innerHTML = `
+          ${product.imageData ? `<img src="${esc(product.imageData)}" alt="${esc(product.name)}" class="product-detail-img">` : ''}
+          <h2>${esc(product.name)}</h2>
+          <p>${esc(product.description)}</p>
+          <div class="price">&pound;${esc(product.price.toFixed(2))}</div>
+          <div class="stock">In stock: ${esc(String(product.stock))}</div>
+        `;
+        container.appendChild(div);
+        document.title = product.name + ' - Buyersell';
+
+        document.getElementById('payment-section').style.display = 'block';
+
+        if (product.stock > 0) {
+          loadPayPal(productId);
+        } else {
+          document.getElementById('payment-message').innerHTML =
+            '<div class="message error">This item is out of stock.</div>';
+        }
+      })
+      .catch(() => {
+        document.getElementById('product-container').innerHTML =
+          '<div class="message error">Product not found.</div>';
+      });
+
+    function showMessage(type, text) {
+      document.getElementById('payment-message').innerHTML =
+        `<div class="message ${type}">${text}</div>`;
+      document.getElementById('paypal-button-container').innerHTML = '';
+    }
+
+    function loadPayPal(productId) {
+      fetch('/api/config')
+        .then(r => r.json())
+        .then(config => {
+          if (!config.paypalClientId) {
+            showMessage('error', 'PayPal is not configured. Set PAYPAL_CLIENT_ID in .env and restart.');
+            return;
+          }
+          const script = document.createElement('script');
+          script.src = `https://www.paypal.com/sdk/js?client-id=${encodeURIComponent(config.paypalClientId)}&currency=GBP`;
+          script.onload = () => initPayPalButtons(productId);
+          script.onerror = () => showMessage('error', 'Failed to load PayPal.');
+          document.body.appendChild(script);
+        })
+        .catch(() => showMessage('error', 'Failed to load payment configuration.'));
+    }
+
+    function initPayPalButtons(productId) {
+      paypal.Buttons({
+        createOrder() {
+          return fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId }),
+          })
+          .then(r => r.json())
+          .then(data => {
+            if (!data.orderId) throw new Error(data.error || 'Could not create order');
+            return data.orderId;
+          });
+        },
+
+        onApprove(data) {
+          return fetch('/api/paypal/capture-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId: data.orderID, productId }),
+          })
+          .then(r => r.json())
+          .then(result => {
+            if (result.success) {
+              showMessage('success', 'Payment successful! Your order has been placed. View it in <a href="/orders">Order History</a>.');
+            } else {
+              showMessage('error', 'Payment was not completed. Please try again.');
+            }
+          });
+        },
+
+        onError(err) {
+          showMessage('error', 'Payment error: ' + (err.message || 'An unexpected error occurred.'));
+        },
+
+        onCancel() {
+          showMessage('error', 'Payment was cancelled. You have not been charged.');
+        }
+      }).render('#paypal-button-container');
+    }
+  </script>
+</body>
+</html>

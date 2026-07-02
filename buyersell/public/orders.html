@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders - Buyersell</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <a class="brand" href="/">Buyersell</a>
+    <nav>
+      <a href="/products">Products</a>
+      <a href="/add-product">Add Product</a>
+      <a href="/orders">Orders</a>
+    </nav>
+  </header>
+
+  <main>
+    <h1>Order History</h1>
+    <div id="orders-container"></div>
+  </main>
+
+  <footer>By Mustafa Ersel Algan for App &amp; Web Development</footer>
+
+  <script>
+    function esc(str) {
+      const d = document.createElement('div');
+      d.textContent = str == null ? '' : String(str);
+      return d.innerHTML;
+    }
+
+    fetch('/api/orders')
+      .then(r => r.json())
+      .then(orders => {
+        const el = document.getElementById('orders-container');
+        if (!orders.length) {
+          el.innerHTML = '<p class="empty">No orders yet.</p>';
+          return;
+        }
+        const table = document.createElement('table');
+        table.innerHTML = `
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Product</th>
+              <th>Price</th>
+              <th>Status</th>
+              <th>Buyer Email</th>
+              <th>PayPal Order ID</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orders.map(o => `
+              <tr>
+                <td>${esc(new Date(o.createdAt).toLocaleString())}</td>
+                <td>${esc(o.productName)}</td>
+                <td>&pound;${esc(o.price.toFixed(2))}</td>
+                <td class="status-${esc(o.status)}">${esc(o.status)}</td>
+                <td>${esc(o.buyerEmail || '-')}</td>
+                <td style="font-size:12px;">${esc(o.paypalOrderId)}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        `;
+        el.appendChild(table);
+      })
+      .catch(() => {
+        document.getElementById('orders-container').innerHTML =
+          '<div class="message error">Failed to load orders.</div>';
+      });
+  </script>
+</body>
+</html>
