@@ -29,16 +29,16 @@
   </main>
 
   <footer>By Mustafa Ersel Algan for App &amp; Web Development</footer>
-
+  
   <script>
     function esc(str) {
       const d = document.createElement('div');
       d.textContent = str;
       return d.innerHTML;
     }
-
+// Here we extract the product ID
     const productId = window.location.pathname.split('/').pop();
-
+// Fetches product details
     fetch(`/api/products/${productId}`)
       .then(r => {
         if (!r.ok) throw new Error('Not found');
@@ -78,6 +78,8 @@
       document.getElementById('paypal-button-container').innerHTML = '';
     }
 
+//Finally we manage to load PayPal SDK for our eventual payments
+    
     function loadPayPal(productId) {
       fetch('/api/config')
         .then(r => r.json())
@@ -95,6 +97,8 @@
         .catch(() => showMessage('error', 'Failed to load payment configuration.'));
     }
 
+//We manke our PayPal buttons show and work
+    
     function initPayPalButtons(productId) {
       paypal.Buttons({
         createOrder() {
